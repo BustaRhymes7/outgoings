@@ -1,6 +1,8 @@
 # Outgoings
 
-A personal tracker for insurance premiums, subscriptions, day-to-day spending and salary.
+A personal tracker for day-to-day spending, bills (insurance and subscriptions) and salary.
+
+**Home** shows this month: spending against your budget or your usual month, bills still due, where the money went and recent entries. **+** logs a spend or income. **Activity** has the year at a glance and every entry by month. **Bills** covers insurance and subscriptions, split into cash, CPF and invested, with a year-on-year comparison. **More** holds income, budget, imports and backup.
 
 **Your data never leaves your phone.** The app is a set of static files. GitHub only serves the app's code; everything you enter is saved in the app's own storage on your device. There's no server, no account and no analytics, and the app loads nothing from other websites.
 
@@ -26,7 +28,7 @@ A personal tracker for insurance premiums, subscriptions, day-to-day spending an
 1. In the Claude version, tap **Export backup** and save the file to Files.
 2. In the new app, tap **Restore from backup** and pick that file.
 
-Or start fresh: in Google Sheets choose **File → Download → CSV**, then in the app use **Insurance → Import from sheet**.
+Or start fresh: in Google Sheets choose **File → Download → CSV**, then in the app use **More → Insurance from Google Sheet**.
 
 ## Keep a backup
 
@@ -34,9 +36,9 @@ Your data lives only on this phone. Deleting the app from your Home Screen, clea
 
 ## Shortcuts
 
-- `…/outgoings/#log` opens the Log spend form. `#paynow` opens it with PayNow selected.
+- `…/outgoings/#log` opens the add form. `#paynow` opens it with PayNow selected. `#income` opens the income form.
 - iOS opens links from the Shortcuts app in **Safari, not the Home Screen app**, and those two keep separate data. So for a quick-log button, long-press the Home Screen icon instead (it offers Log spend / Log PayNow where supported), or just open the app.
-- For Apple Pay taps, use the shortcut that appends to a text file, then **Spending → Import Apple Pay** in the app.
+- For Apple Pay taps, use the shortcut that appends to a text file, then **More → Apple Pay taps** in the app.
 
 ## Updating the app
 
