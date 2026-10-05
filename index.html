@@ -163,42 +163,27 @@ section{display:flex;flex-direction:column;gap:12px}
 .bar-row{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;font-size:.88rem}
 .bar-track{height:8px;background:var(--sunk);border-radius:4px;overflow:hidden}
 .bar-track span{display:block;height:100%;background:var(--accent);border-radius:4px}
-.ycal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
-@media (min-width:600px){.ycal{grid-template-columns:repeat(4,1fr)}}
-.mtile{position:relative;border:1px solid var(--line);border-radius:12px;padding:10px 10px 12px;text-align:left;display:flex;flex-direction:column;gap:4px;min-width:0;
-  background:color-mix(in srgb,var(--accent) calc(var(--lvl,0)*22%),var(--surface));transition:border-color .15s}
-.mtile .mt-name{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.mtile .mt-amt{font-size:1rem;font-weight:500;color:var(--fg)}
-.mtile .mt-bar{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--sunk)}
-.mtile .mt-bar span{display:block;height:100%}
-.mtile .mt-tag{font-size:.68rem;color:var(--muted)}
-.mtile.future{border-style:dashed}
-.mtile.future .mt-amt{color:var(--muted)}
-.mtile.now .mt-name{color:var(--accent)}
-.mtile.sel{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent) inset}
-.mdetail{border-top:1px solid var(--line);padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
-.md-head{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:8px;text-align:center}
-.md-head h3{font-size:1.05rem}
+.ycal{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px}
+.mt{border:0;border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;
+  background:color-mix(in srgb,var(--accent) calc(var(--lvl,0)*60%),var(--sunk))}
+.mt-n{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.mt-v{font-size:.92rem;font-weight:500;color:var(--fg)}
+.mt.future{opacity:.55}
+.mt.now{box-shadow:0 0 0 2px var(--accent) inset}
+.mt.now .mt-n{color:var(--accent)}
+.cal-note{display:flex;justify-content:space-between;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:transparent;padding:10px 14px;text-align:left;font-size:.8rem;color:var(--warn)}
 .md-nav{border:1px solid var(--line);background:var(--surface);width:36px;height:36px;border-radius:9px;font-size:1.1rem}
-.md-nav:disabled{opacity:.35}
-.md-split{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.84rem;color:var(--muted);justify-content:center}
-.md-split i,.legend-s i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
-.md-split b{color:var(--fg);font-weight:500}
+.md-nav:disabled{opacity:.3}
 .dcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.dh{font-size:.68rem;color:var(--faint);text-align:center;font-weight:600;padding-bottom:2px}
-.dc{aspect-ratio:1/1.05;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;
-  background:color-mix(in srgb,var(--accent) calc(var(--lvl,0)*55%),var(--sunk));font-size:.78rem;position:relative}
-.dc.empty{background:transparent}
-.dc .dn{color:var(--muted);font-size:.72rem}
-.dc.has .dn{color:var(--fg);font-weight:600}
-.dc .dv{font-size:.66rem;color:var(--fg)}
-.dc.today{outline:2px solid var(--accent);outline-offset:-2px}
-.dc.due::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--ilp)}
-.md-lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
-.md-lists h4{margin:0 0 6px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.md-lists ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:.86rem}
-.md-lists li{display:flex;justify-content:space-between;gap:10px}
-.mdetail .link{align-self:flex-start}
+.dh{font-size:.68rem;color:var(--faint);text-align:center;font-weight:600}
+.dc{height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);position:relative;
+  background:color-mix(in srgb,var(--accent) calc(var(--lvl,0)*65%),var(--sunk))}
+.dc.has{color:var(--fg);font-weight:600}
+.dc.today{box-shadow:0 0 0 2px var(--accent) inset}
+.dc.due::after{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--ilp)}
+.mlist h4{margin:0 0 6px;display:flex;justify-content:space-between;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.mlist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:.9rem}
+.mlist li{display:flex;justify-content:space-between;gap:10px}
 .months{display:flex;flex-direction:column}
 .mrow{border-bottom:1px solid var(--line)} .mrow:last-child{border-bottom:0}
 .mrow summary{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:10px 16px;cursor:pointer;list-style:none;font-size:.9rem}
@@ -452,47 +437,37 @@ function scheduleSection(){
   const max=Math.max(...data.map(d=>d.total),1), yr=data.reduce((a,d)=>a+d.total,0), firstM=(()=>{const ds=S.expenses.map(e=>e.date||"").filter(d=>d.startsWith(String(YEAR))).sort();return ds.length?+ds[0].slice(5,7)-1:nowM})(), past=data.filter(d=>d.i>=firstM&&d.i<=nowM), avg=past.length?past.reduce((a,d)=>a+d.daily+d.billsPaid,0)/past.length:0;
   const un=unscheduled.reduce((a,i)=>a+yearlyBy(i,"cash"),0);
   const mn=(i,f)=>new Date(YEAR,i,1).toLocaleDateString("en-SG",{month:f||"short"});
-  if(S.calMonth==null||S.calMonth<0||S.calMonth>11)S.calMonth=nowM>=0&&nowM<12?nowM:0;
-  const tiles=data.map(d=>{const b=d.billsPaid+d.billsDue, lvl=d.total?Math.max(.12,d.total/max):0;
-    return `<button type="button" class="mtile${d.i===nowM?" now":""}${d.future?" future":""}${d.i===S.calMonth?" sel":""}" data-cal="${d.i}" aria-pressed="${d.i===S.calMonth}" style="--lvl:${lvl.toFixed(3)}">
-      <span class="mt-name">${mn(d.i)}</span>
-      <span class="mt-amt num">${d.total?(d.total>=10000?"S$"+Math.round(d.total/1000)+"k":"S$"+nf0.format(d.total)):"—"}</span>
-      <span class="mt-bar">${d.total?`<span class="s-daily" style="width:${d.daily/d.total*100}%"></span><span class="s-bills" style="width:${b/d.total*100}%"></span>`:""}</span>
-      ${d.future&&d.total?`<span class="mt-tag">expected</span>`:""}</button>`}).join("");
-  // detail for the selected month: a day calendar + the breakdown
-  const d=data[S.calMonth], first=new Date(YEAR,S.calMonth,1), days=new Date(YEAR,S.calMonth+1,0).getDate(), lead=(first.getDay()+6)%7;
+  S._cal=data;
+  const short=v=>v>=10000?Math.round(v/1000)+"k":v>=1000?(Math.round(v/100)/10)+"k":nf0.format(v);
+  const tiles=data.map(d=>`<button type="button" class="mt${d.i===nowM?" now":""}${d.future?" future":""}" data-cal="${d.i}" style="--lvl:${d.total?Math.max(.15,d.total/max).toFixed(3):0}" aria-label="${mn(d.i,"long")}: ${d.total?"S$"+money(d.total):"nothing"}">
+      <span class="mt-n">${mn(d.i)}</span><span class="mt-v num">${d.total?short(d.total):"·"}</span></button>`).join("");
+  return `<section>
+    <div class="sec-head"><h2>${YEAR}</h2><span class="muted small">Avg <b class="num">S$${money(avg)}</b>/mo · Total <b class="num">S$${money(yr)}</b></span></div>
+    <div class="panel"><div class="ycal">${tiles}</div>
+      ${unscheduled.length?`<button class="cal-note" data-go="insurance"><span>${unscheduled.length} polic${unscheduled.length===1?"y has":"ies have"} no due date, so S$${money(un)}/yr isn't placed in a month</span><span aria-hidden="true">›</span></button>`:""}
+    </div></section>`;
+}
+function monthSheet(i){
+  const d=S._cal&&S._cal[i]; if(!d)return;
+  const mn=f=>new Date(YEAR,i,1).toLocaleDateString("en-SG",{month:f});
+  const first=new Date(YEAR,i,1), days=new Date(YEAR,i+1,0).getDate(), lead=(first.getDay()+6)%7;
   const perDay={};S.expenses.filter(e=>(e.date||"").startsWith(d.k)).forEach(e=>{const n=+e.date.slice(8,10);perDay[n]=(perDay[n]||0)+(+e.amount||0)});
   d.sched.forEach(x=>{if(x.date){const n=+x.date.slice(8,10);perDay[n]=(perDay[n]||0)+x.amt}});
-  const dueDays=new Set(d.sched.filter(x=>x.date).map(x=>+x.date.slice(8,10)));
-  const dmax=Math.max(...Object.values(perDay),1), todayN=(ym(new Date())===d.k)?new Date().getDate():0;
-  let cells="";for(let i=0;i<lead;i++)cells+=`<span class="dc empty"></span>`;
-  for(let n=1;n<=days;n++){const v=perDay[n]||0;cells+=`<span class="dc${v?" has":""}${n===todayN?" today":""}${dueDays.has(n)?" due":""}" style="--lvl:${v?Math.max(.15,v/dmax).toFixed(3):0}" title="${v?"S$"+money(v):""}"><span class="dn">${n}</span>${v?`<span class="dv num">${v>=1000?Math.round(v/100)/10+"k":Math.round(v)}</span>`:""}</span>`}
+  const due=new Set(d.sched.filter(x=>x.date).map(x=>+x.date.slice(8,10))), dmax=Math.max(...Object.values(perDay),1), tN=ym(new Date())===d.k?new Date().getDate():0;
+  let cells="";for(let k=0;k<lead;k++)cells+=`<span></span>`;
+  for(let n=1;n<=days;n++){const v=perDay[n]||0;cells+=`<span class="dc${v?" has":""}${n===tN?" today":""}${due.has(n)?" due":""}" style="--lvl:${v?Math.max(.18,v/dmax).toFixed(3):0}"${v?` title="S$${money(v)}"`:""}>${n}</span>`}
   const cats=Object.entries(d.byCat).sort((x,y)=>y[1]-x[1]);
   const li=(l,v,t)=>`<li><span>${l}${t?` <span class="muted">· ${t}</span>`:""}</span><span class="num">S$${money(v)}</span></li>`;
-  const detail=`<div class="mdetail">
-    <div class="md-head"><button type="button" class="md-nav" data-cal="${Math.max(0,S.calMonth-1)}" aria-label="Previous month" ${S.calMonth===0?"disabled":""}>‹</button>
-      <div><h3>${mn(S.calMonth,"long")} ${YEAR}</h3><span class="muted small">${d.future?"Expected":"Spent"+(d.billsDue?" + due":"")}: <b class="num">S$${money(d.total)}</b></span></div>
-      <button type="button" class="md-nav" data-cal="${Math.min(11,S.calMonth+1)}" aria-label="Next month" ${S.calMonth===11?"disabled":""}>›</button></div>
-    <div class="md-split"><span><i class="s-daily"></i>Day-to-day <b class="num">S$${money(d.daily)}</b></span><span><i class="s-bills"></i>Insurance & bills <b class="num">S$${money(d.billsPaid+d.billsDue)}</b></span></div>
-    <div class="dcal"><span class="dh">M</span><span class="dh">T</span><span class="dh">W</span><span class="dh">T</span><span class="dh">F</span><span class="dh">S</span><span class="dh">S</span>${cells}</div>
-    ${cats.length||d.billList.length||d.sched.length?`<div class="md-lists">
-      ${cats.length?`<div><h4>Day-to-day</h4><ul>${cats.map(([c,v])=>li(esc(c),v)).join("")}</ul></div>`:""}
-      ${d.billList.length||d.sched.length?`<div><h4>Insurance & bills</h4><ul>${d.billList.map(e=>li(esc(e.note||e.category),e.amount,"paid")).join("")}${d.sched.map(x=>li(esc(x.it.name),x.amt,x.date?"due "+fmtDate(x.date):(FREQ[x.it.frequency]||FREQ.yearly).label.toLowerCase())).join("")}</ul></div>`:""}
-      </div>`:`<p class="muted small" style="margin:0">Nothing ${d.future?"expected":"logged"} in ${mn(S.calMonth,"long")}.</p>`}
-    ${!d.future?`<button class="link" data-month="${d.k}" data-go="spend">See every entry for ${mn(S.calMonth,"long")} →</button>`:""}
-  </div>`;
-  const rows=`<div class="ycal">${tiles}</div>${detail}`;
-  return `<section>
-    <div class="sec-head"><h2>Money out in ${YEAR}</h2><span class="legend-s"><i class="s-daily"></i>Day-to-day <i class="s-bills"></i>Insurance & bills</span></div>
-    <div class="panel">
-      <div class="stats" style="border-bottom:1px solid var(--line)">
-        <div class="stat"><span class="eyebrow">This month</span><span class="v">S$${money(nowM>=0&&nowM<12?data[nowM].total:0)}</span><span class="small muted">spent + due</span></div>
-        <div class="stat"><span class="eyebrow">Avg per month</span><span class="v">S$${money(avg)}</span><span class="small muted">since you started logging</span></div>
-        <div class="stat"><span class="eyebrow">${YEAR} total</span><span class="v">S$${money(yr)}</span><span class="small muted">spent + expected</span></div>
-      </div>
-      ${rows}
-      ${unscheduled.length?`<div class="empty" style="border-top:1px solid var(--line)"><p><b class="num">S$${money(un)}</b> a year of premiums isn't in any month yet because ${unscheduled.length} polic${unscheduled.length===1?"y has":"ies have"} no due date (${unscheduled.map(i=>esc(i.name)).join(", ")}). Add due dates, or set a policy to Monthly if you pay by GIRO, and it'll show in the right months.</p><button class="btn" data-go="insurance">Add due dates</button></div>`:""}
-    </div></section>`;
+  const bills=[...d.billList.map(e=>li(esc(e.note||e.category),e.amount,"paid")),...d.sched.map(x=>li(esc(x.it.name),x.amt,x.date?"due "+fmtDate(x.date):(FREQ[x.it.frequency]||FREQ.yearly).label.toLowerCase()))];
+  openSheet(`<div class="sheet-h">
+      <button type="button" class="md-nav" data-calsheet="${i-1}" aria-label="Previous month" ${i===0?"disabled":""}>‹</button>
+      <div style="text-align:center"><h2>${mn("long")}</h2><span class="muted small">${d.future?"Expected":"Spent"} <b class="num">S$${money(d.total)}</b></span></div>
+      <button type="button" class="md-nav" data-calsheet="${i+1}" aria-label="Next month" ${i===11?"disabled":""}>›</button></div>
+    <div class="dcal">${["M","T","W","T","F","S","S"].map(x=>`<span class="dh">${x}</span>`).join("")}${cells}</div>
+    ${cats.length?`<div class="mlist"><h4>Day-to-day <span class="num">S$${money(d.daily)}</span></h4><ul>${cats.map(([c,v])=>li(esc(c),v)).join("")}</ul></div>`:""}
+    ${bills.length?`<div class="mlist"><h4>Insurance & bills <span class="num">S$${money(d.billsPaid+d.billsDue)}</span></h4><ul>${bills.join("")}</ul></div>`:""}
+    ${!cats.length&&!bills.length?`<p class="muted" style="margin:0;text-align:center">Nothing ${d.future?"expected":"logged"} in ${mn("long")}.</p>`:""}
+    <div class="form-foot"><span></span>${!d.future?`<button class="btn" type="button" data-calspend="${d.k}">See all entries</button>`:""}<button class="btn primary" type="button" data-close>Done</button></div>`,".btn.primary");
 }
 function backupAge(){return S.lastBackup?Math.floor((Date.now()-S.lastBackup)/864e5):null}
 function dataPanel(){
@@ -705,6 +680,8 @@ async function twoTap(btn,fn){if(btn.dataset.armed){await fn();return}btn.datase
 
 document.getElementById("sheet").addEventListener("click",async e=>{
   if(e.target.closest("[data-close]"))return closeSheet();
+  const cs=e.target.closest("[data-calsheet]"); if(cs){monthSheet(+cs.dataset.calsheet);return}
+  const sp=e.target.closest("[data-calspend]"); if(sp){closeSheet();S.month=sp.dataset.calspend;S.tab="spend";try{localStorage.setItem("og-tab","spend")}catch(x){};render();window.scrollTo({top:0});return}
   const di=e.target.closest("[data-del-item]"),de=e.target.closest("[data-del-exp]");
   if(di)return twoTap(di,async()=>{await S.db.collection("items").doc(di.dataset.delItem).delete();closeSheet();toast("Deleted")});
   if(de)return twoTap(de,async()=>{await S.db.collection("expenses").doc(de.dataset.delExp).delete();closeSheet();toast("Deleted")});
@@ -734,7 +711,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#sheet"))return;
   const per=e.target.closest("[data-period]"); if(per){S.period=per.dataset.period;try{localStorage.setItem("og-period",S.period)}catch(x){};render();return}
   const tab=e.target.closest("[data-tab]"); if(tab){S.tab=tab.dataset.tab;try{localStorage.setItem("og-tab",S.tab)}catch(x){};render();return}
-  const cal=e.target.closest("[data-cal]"); if(cal){S.calMonth=+cal.dataset.cal;render();return}
+  const cal=e.target.closest("[data-cal]"); if(cal){monthSheet(+cal.dataset.cal);return}
   const mb=e.target.closest("[data-month]"); if(mb){S.month=mb.dataset.month;if(mb.dataset.go){S.tab=mb.dataset.go;try{localStorage.setItem("og-tab",S.tab)}catch(x){}}render();window.scrollTo({top:0});return}
   const go=e.target.closest("[data-go]"); if(go){S.tab=go.dataset.go;try{localStorage.setItem("og-tab",S.tab)}catch(x){};render();window.scrollTo({top:0});return}
   const mon=e.target.closest("[data-mon]"); if(mon){const [y,m]=S.month.split("-").map(Number);S.month=ym(new Date(y,m-1+(+mon.dataset.mon),1));render();return}
