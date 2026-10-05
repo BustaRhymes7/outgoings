@@ -1,6 +1,6 @@
 // Outgoings service worker: caches the app so it opens offline.
 // It never sees or stores your data — that lives in the app's own on-device storage.
-const VERSION = "outgoings-v3";
+const VERSION = "outgoings-v4";
 const ASSETS = [
   "./", "index.html", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png",
