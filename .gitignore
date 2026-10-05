@@ -1,0 +1,4 @@
+# Never commit personal data
+*backup*.json
+*.csv
+.DS_Store
