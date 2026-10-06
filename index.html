@@ -114,6 +114,14 @@ body.reveal .pv .pv-v{display:inline} body.reveal .pv .pv-m{display:none}
 .cat{display:grid;grid-template-columns:1fr auto;gap:5px 10px;align-items:center;font-size:.9rem}
 .cat .bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
 .cat .bar span{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.cat.warn .bar span{background:var(--warn)} .cat.over .bar span{background:var(--bad)}
+.cat .dl{font-family:var(--f-mono);font-size:.74rem;margin-left:6px}
+.cat .of{color:var(--faint);font-size:.8rem}
+.catrows{display:flex;flex-direction:column;gap:8px}
+.catrow{display:grid;grid-template-columns:1fr 110px;gap:8px}
+.catrow input[readonly]{color:var(--muted)}
+.chk{display:flex;align-items:center;gap:10px;font-size:.92rem}
+.chk input{width:20px;height:20px;flex:none;accent-color:var(--accent)}
 
 .empty{padding:18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
 .empty p{margin:0;color:var(--muted);font-size:.92rem}
@@ -247,6 +255,7 @@ const INCOME_TYPES=["Salary","Bonus","Other"];
 const FREQ={weekly:{n:52,label:"Weekly"},monthly:{n:12,label:"Monthly"},quarterly:{n:4,label:"Quarterly"},halfyearly:{n:2,label:"Half-yearly"},yearly:{n:1,label:"Yearly"}};
 const KIND={insurance:"Insurance",subscription:"Subscription",bill:"Bill"};
 const KEY="outgoings.v1";
+const cats=()=>{const c=S.settings.cats;return Array.isArray(c)&&c.length?c:CATS};
 const S={q:"",actYear:null,tab:"home",items:[],expenses:[],income:[],rules:{},skippedTaps:[],settings:{},lastBackup:null,storageOK:true,period:"year",actMonth:null};
 try{const t=localStorage.getItem("og-tab2");if(["home","activity","bills","more"].includes(t))S.tab=t;S.period=localStorage.getItem("og-period")==="month"?"month":"year"}catch(e){}
 
@@ -268,7 +277,7 @@ function fmtDate(s){if(!s)return"";const d=new Date(s+"T00:00:00");return d.toLo
 function dayLabel(s){if(s===today())return"Today";if(s===yesterday())return"Yesterday";return new Date(s+"T00:00:00").toLocaleDateString("en-SG",{weekday:"short",day:"numeric",month:"short"})}
 function daysUntil(s){if(!s)return null;return Math.round((new Date(s+"T00:00:00")-new Date(today()+"T00:00:00"))/864e5)}
 function advance(s,freq,dir=1){const d=new Date(s+"T00:00:00");if(freq==="weekly")d.setDate(d.getDate()+7*dir);else{const m=({monthly:1,quarterly:3,halfyearly:6,yearly:12}[freq]||12)*dir;const day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+m);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()))}return ymd(d)}
-const pv=html=>`<span class="pv"><span class="pv-v">${html}</span><span class="pv-m">S$••••</span></span>`;
+const pv=(html,mask="S$••••")=>`<span class="pv"><span class="pv-v">${html}</span><span class="pv-m">${mask}</span></span>`;
 const short=v=>v>=10000?Math.round(v/1000)+"k":v>=1000?(Math.round(v/100)/10)+"k":nf0.format(v);
 const initials=c=>esc((c||"?").replace(/[^A-Za-z0-9]/g,"").slice(0,2).toUpperCase()||"?");
 function toast(m,undo){const t=document.getElementById("toast");t.innerHTML=`<span>${esc(m)}</span>`+(undo?`<button class="undo" type="button" data-undo>Undo</button>`:"");toast._undo=undo||null;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true;toast._undo=null},undo?5000:2200)}
@@ -288,7 +297,7 @@ const inMonth=(list,k)=>list.filter(e=>(e.date||"").startsWith(k));
 const sum=(l,f="amount")=>l.reduce((a,e)=>a+(+e[f]||0),0);
 function byCat(l){const m={};l.forEach(e=>m[e.category||"Other"]=(m[e.category||"Other"]||0)+(+e.amount||0));return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 function usualMonth(){const now=ym(new Date()),m={};S.expenses.forEach(e=>{const k=(e.date||"").slice(0,7);if(k&&k<now)m[k]=(m[k]||0)+(+e.amount||0)});const v=Object.keys(m).sort().slice(-6).map(k=>m[k]);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
-function catOrder(){const c={};S.expenses.slice(-200).forEach(e=>c[e.category]=(c[e.category]||0)+1);return[...CATS].sort((a,b)=>(c[b]||0)-(c[a]||0))}
+function catOrder(){const c={};S.expenses.slice(-200).forEach(e=>c[e.category]=(c[e.category]||0)+1);return[...cats()].sort((a,b)=>(c[b]||0)-(c[a]||0))}
 /* bills expected in a month that haven't been logged as paid */
 function expectedIn(k){const out=[];S.items.forEach(it=>{const cash=split(it).cash;if(!(cash>0))return;const f=it.frequency||"yearly";
   if(!it.nextDue){if(f==="monthly")out.push({it,amt:cash});return}
@@ -324,8 +333,11 @@ function vHome(){
     pace=`<div class="pace ${cls}"><div class="fill" style="width:${pct}%"></div><div class="mark" style="left:${(frac*100).toFixed(1)}%"></div></div>
     <div class="pace-t"><span>${budget?(spent<=budget?`<b class="num">S$${money(budget-spent)}</b> left of S$${nf0.format(budget)}`:`<b class="num bad">S$${money(spent-budget)}</b> over budget`):`Usual month <b class="num">S$${nf0.format(usual)}</b>`}</span><span>${left} day${left===1?"":"s"} left</span></div>`}
   else pace=`<div class="pace-t"><span>${S.expenses.length?"Set a budget to see your pace.":"Tap + to log your first spend."}</span>${S.expenses.length?`<button class="link" data-go="more">Set budget</button>`:""}</div>`;
+  const pk=ym(new Date(d.getFullYear(),d.getMonth()-1,1)), pdim=new Date(d.getFullYear(),d.getMonth(),0).getDate();
+  const prevAll=inMonth(S.expenses,pk), hasPrev=prevAll.length>0, prevSoFar=prevAll.filter(e=>e.date<=pk+"-"+pad(Math.min(d.getDate(),pdim))), dPrev=r2(spent-sum(prevSoFar));
   const due=sum(expectedIn(k),"amt"), inc=sum(inMonth(S.income,k),"net"), rest=inc-spent-due;
-  const rows=[due?`<button class="hero-row" data-go="bills"><span>Bills still due this month</span><span class="num">S$${money(due)}</span></button>`:"",
+  const rows=[hasPrev?`<div class="hero-row"><span>vs this time last month</span><span class="num ${dPrev>0?"bad":dPrev<0?"good":""}">${Math.abs(dPrev)<.01?"Same":`S$${money(Math.abs(dPrev))} ${dPrev>0?"more":"less"}`}</span></div>`:"",
+    due?`<button class="hero-row" data-go="bills"><span>Bills still due this month</span><span class="num">S$${money(due)}</span></button>`:"",
     inc?`<div class="hero-row"><span>Left from salary</span><span class="num ${rest>=0?"good":"bad"}">${pv((rest<0?"−":"")+"S$"+money(Math.abs(rest)))}</span></div>`:""].join("");
   const hero=`<div class="card hero"><div><div class="lbl">Spent so far</div><div class="big"><small>S$</small>${money(spent)}</div></div>${pace}${rows?`<div class="hero-rows">${rows}</div>`:""}</div>`;
 
@@ -333,8 +345,13 @@ function vHome(){
   const noDue=S.items.filter(i=>!i.nextDue&&(i.frequency||"yearly")!=="monthly").length;
   const upHtml=up.length?`<div class="list">${up.map(i=>{const s=split(i);return`<div class="row"><span class="dot">${initials(i.provider||i.name)}</span><span class="main"><span class="t">${esc(i.name)}</span><span class="s">S$${money(s.cash||s.medisave||s.investment)} · ${dueChip(i).replace(/<[^>]+>/g,"")}</span></span><button class="pay" data-paid="${esc(i.id)}">Paid</button></div>`}).join("")}</div>`
     :noDue?`<button class="nudge" data-go="bills"><span>${noDue} bill${noDue===1?" has":"s have"} no due date, so you won't get reminded.</span><span aria-hidden="true">›</span></button>`:"";
-  const cats=byCat(mine).slice(0,4), top=cats[0]?.[1]||1;
-  const catHtml=cats.length?`<div class="list cats">${cats.map(([c,v])=>`<div class="cat"><span>${esc(c)}</span><span class="num">S$${money(v)}</span><div class="bar"><span style="width:${v/top*100}%"></span></div></div>`).join("")}</div>`:"";
+  const cb=S.settings.catBudgets||{}, spentBy=Object.fromEntries(byCat(mine)), prevBy=Object.fromEntries(byCat(prevSoFar));
+  const capped=Object.keys(cb).filter(c=>cb[c]>0).sort((a,b)=>(spentBy[b]||0)/cb[b]-(spentBy[a]||0)/cb[a]), free=byCat(mine).filter(([c])=>!(cb[c]>0)).slice(0,4).map(x=>x[0]);
+  const top=Math.max(1,...free.map(c=>spentBy[c]));
+  const catRow=c=>{const v=spentBy[c]||0,b=+cb[c]||0,dl=r2(v-(prevBy[c]||0)),cls=b?(v>b?"over":v>b*frac*1.1?"warn":""):"";
+    return `<div class="cat ${cls}"><span>${esc(c)}${hasPrev&&Math.abs(dl)>=1?`<span class="dl ${dl>0?"bad":"good"}">${dl>0?"+":"−"}${nf0.format(Math.abs(dl))}</span>`:""}</span><span class="num">S$${money(v)}${b?`<span class="of"> / ${nf0.format(b)}</span>`:""}</span><div class="bar"><span style="width:${Math.min(100,b?v/b*100:v/top*100)}%"></span></div></div>`};
+  const catList=[...capped,...free];
+  const catHtml=catList.length?`<div class="list cats">${catList.map(catRow).join("")}</div>${hasPrev?`<p class="muted small" style="margin:0 4px">+/− compares with the same day last month.</p>`:""}`:"";
   const recent=[...S.expenses].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0)).slice(0,5);
   const age=backupAge(), n=S.expenses.length+S.items.length+S.income.length;
   const nb=!S.storageOK?`<button class="nudge" data-act="export"><span>Storage is blocked, so changes won't last. Export a backup now.</span><span>›</span></button>`
@@ -400,17 +417,19 @@ function vBills(){
 
 function vMore(){
   const y=String(YEAR), inc=S.income.filter(e=>(e.date||"").startsWith(y)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const net=sum(inc,"net"), cpf=sum(inc,"cpfEmployee")+sum(inc,"cpfEmployer"), age=backupAge();
+  const net=sum(inc,"net"), cpf=sum(inc,"cpfEmployee")+sum(inc,"cpfEmployer"), age=backupAge(), kept=net?Math.round((net-sum(S.expenses.filter(e=>(e.date||"").startsWith(y+"-"))))/net*100):null;
   const chev=`<svg class="chev" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
   const item=(act,t,s)=>`<button class="row" data-act="${act}"><span class="main"><span class="t">${t}</span>${s?`<span class="s">${s}</span>`:""}</span>${chev}</button>`;
   return `<section><div class="sh"><h2>Income ${YEAR}</h2><button class="link" data-act="income">＋ Log income</button></div>
-    <div class="card"><div class="split3" style="grid-template-columns:1fr 1fr">
+    <div class="card"><div class="split3"${kept==null?` style="grid-template-columns:1fr 1fr"`:""}>
       <div><span class="k">Take-home</span><span class="v num">${pv("S$"+money(net))}</span><span class="h">${inc.length} payment${inc.length===1?"":"s"}</span></div>
-      <div><span class="k" style="color:var(--cpf)">Into CPF</span><span class="v num">${pv("S$"+money(cpf))}</span><span class="h">you + employer</span></div></div></div>
+      <div><span class="k" style="color:var(--cpf)">Into CPF</span><span class="v num">${pv("S$"+money(cpf))}</span><span class="h">you + employer</span></div>
+      ${kept==null?"":`<div><span class="k">Kept</span><span class="v num ${kept<0?"bad":""}">${pv(kept+"%","••%")}</span><span class="h">after spending</span></div>`}</div></div>
     ${inc.length?`<div class="list">${inc.slice(0,6).map(e=>`<button class="row" data-inc="${esc(e.id)}"><span class="main"><span class="t">${esc(e.type||"Salary")}</span><span class="s">${fmtDate(e.date)}${e.note?" · "+esc(e.note):""}</span></span><span class="amt"><span class="num">${pv("S$"+money(e.net))}</span></span></button>`).join("")}</div>`:""}</section>
-  <section><div class="sh"><h2>Monthly budget</h2></div>
+  <section><div class="sh"><h2>Budget</h2></div>
     <div class="list"><div class="row"><span class="main"><span class="t">Spending budget</span><span class="s" style="white-space:normal">Shown on Home. Leave empty to compare with your usual month.</span></span>
-    <input id="budget" inputmode="decimal" placeholder="S$" value="${S.settings.budget||""}" style="width:104px;text-align:right" aria-label="Monthly budget"></div></div></section>
+    <input id="budget" inputmode="decimal" placeholder="S$" value="${S.settings.budget||""}" style="width:104px;text-align:right" aria-label="Monthly budget"></div>
+    ${item("cats","Categories and limits",(()=>{const n=Object.values(S.settings.catBudgets||{}).filter(v=>v>0).length;return`${cats().length} categories${n?`, ${n} with a monthly limit`:". Rename, add, or set limits"}`})())}</div></section>
   <section><div class="sh"><h2>Import</h2></div><div class="list set">
     ${item("sheet-import","Insurance from Google Sheet","Download the sheet as CSV, then pick it")}
     ${item("applepay","Apple Pay taps","From the file your Shortcut writes")}</div></section>
@@ -435,24 +454,32 @@ function addSheet(preset){
   <form id="f-add">
     <div class="amount"><span>S$</span><input id="a-amt" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="Amount"></div>
     ${chips("cat",order,e.category||order[0])}
-    <input id="a-note" placeholder="What for? (optional)" aria-label="What for">
+    <input id="a-note" placeholder="What for? (optional)" aria-label="What for" list="a-notes" autocomplete="off">
+    <datalist id="a-notes">${pastNotes().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
     <div class="when">${chips("when",["Today","Yesterday","Other day"],"Today")}<input id="a-date" type="date" value="${today()}" aria-label="Date" hidden></div>
     ${chips("method",METHODS,e.method||"Card")}
     <p class="err" id="a-err" hidden></p>
     <button class="btn primary wide" type="submit">Add <span id="a-echo"></span></button>
   </form>`,"#a-amt");
+  const touched={};["cat","method"].forEach(n=>document.querySelectorAll(`input[name="${n}"]`).forEach(r=>r.addEventListener("change",()=>touched[n]=true)));
+  const pick=(n,v)=>{const r=[...document.querySelectorAll(`input[name="${n}"]`)].find(x=>x.value===v);if(r&&!touched[n])r.checked=true};
+  document.getElementById("a-note").addEventListener("input",ev=>{const k=mkey(ev.target.value);if(!k)return;
+    const last=S.expenses.filter(x=>mkey(x.note)===k).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0];
+    pick("cat",last?.category||S.rules[k]);if(last&&!e.method)pick("method",last.method)});
   const echo=()=>{const v=num("a-amt");document.getElementById("a-echo").textContent=v?"S$"+money(v):""};document.getElementById("a-amt").addEventListener("input",echo);
   document.querySelectorAll('input[name="when"]').forEach(r=>r.addEventListener("change",()=>{const v=picked("when"),d=document.getElementById("a-date");d.hidden=v!=="Other day";if(v==="Today")d.value=today();if(v==="Yesterday")d.value=yesterday();if(v==="Other day")d.focus()}));
   document.getElementById("f-add").addEventListener("submit",ev=>{ev.preventDefault();const a=num("a-amt");if(!(a>0)){const er=document.getElementById("a-err");er.textContent="Enter an amount.";er.hidden=false;return}
     S.expenses.push({id:newId(),amount:a,category:picked("cat")||"Other",note:document.getElementById("a-note").value.trim(),date:document.getElementById("a-date").value||today(),method:picked("method")||"Card",createdAt:Date.now()});
     save(`Added S$${money(a)}`)});
 }
+/* notes used most, for suggestions in the add form */
+function pastNotes(){const c={},label={};S.expenses.slice(-500).forEach(e=>{const k=mkey(e.note);if(!k)return;c[k]=(c[k]||0)+1;label[k]=e.note.trim()});return Object.keys(c).sort((a,b)=>c[b]-c[a]).slice(0,40).map(k=>label[k])}
 function editExpense(id){
   const e=S.expenses.find(x=>x.id===id);if(!e)return;
   openSheet(`<div class="sheet-h"><h2>Edit</h2><button class="txt-btn" data-close>Cancel</button></div>
   <form id="f-ed">
     <div class="amount"><span>S$</span><input id="e-amt" inputmode="decimal" value="${e.amount}" aria-label="Amount"></div>
-    ${chips("cat",CATS,e.category)}
+    ${chips("cat",[...new Set([...cats(),e.category].filter(Boolean))],e.category)}
     <input id="e-note" placeholder="What for?" value="${esc(e.note||"")}" aria-label="What for">
     <div class="grid2"><input id="e-date" type="date" value="${esc(e.date)}" aria-label="Date"><select id="e-method" aria-label="Paid with">${METHODS.map(m=>`<option ${m===e.method?"selected":""}>${m}</option>`).join("")}</select></div>
     <div class="btns"><button class="btn danger" type="button" data-del-exp="${esc(id)}">Delete</button><button class="btn primary" type="submit">Save</button></div>
@@ -491,6 +518,7 @@ function billSheet(id){
     ${it.cover?line("Cover",`S$${nf0.format(it.cover)}`):""}
     ${line("Next due",it.nextDue?fmtDate(it.nextDue):`<span class="muted">Not set</span>`)}
     ${it.lastPaid?line("Last paid",fmtDate(it.lastPaid)):""}
+    ${it.auto?line("Logging",`Automatic, as ${esc(billCat(it))}`):""}
   </div>
   ${it.note?`<p class="small" style="margin:0;padding:10px 12px;border-radius:12px;background:var(--warn-soft);color:var(--warn)">${esc(it.note)}</p>`:""}
   <div class="btns">${it.nextDue?`<button class="btn primary" data-paid="${esc(it.id)}">Mark paid</button><button class="btn" data-edit-bill="${esc(it.id)}">Edit</button>`:`<button class="btn primary" data-edit-bill="${esc(it.id)}">Add due date</button>`}</div>`);
@@ -502,8 +530,13 @@ function paidSheet(id){
     <p class="muted" style="margin:0">${s.cash?`Adds <b class="num">S$${money(s.cash)}</b> to this month's spending.`:"Nothing is added to spending."}${s.medisave?` The S$${money(s.medisave)} from CPF isn't counted.`:""}${s.investment?` The S$${money(s.investment)} invested isn't counted.`:""} Next due date moves to <b>${fmtDate(next)}</b>.</p>
     <button class="btn primary wide" data-confirm-paid="${esc(id)}">Confirm</button>`);
 }
+function billCat(it){const c=it.category||(it.kind==="insurance"?"Insurance":it.kind==="bill"?"Bills":"Subscriptions");return cats().includes(c)?c:"Other"}
+/* bills set to log themselves: add every payment whose due date has arrived, then move the due date on */
+function autoLog(){const t=today();let n=0;S.items.forEach(it=>{if(!it.auto||!it.nextDue)return;const cash=r2(split(it).cash);let g=0;
+  while(it.nextDue<=t&&g++<120){if(cash>0){S.expenses.push({id:newId(),amount:cash,category:billCat(it),note:it.name,date:it.nextDue,method:it.method||"GIRO",itemId:it.id,auto:true,createdAt:Date.now()});n++}
+    it.lastPaid=it.nextDue;it.nextDue=advance(it.nextDue,it.frequency||"yearly")}});return n}
 function confirmPaid(id){const it=S.items.find(i=>i.id===id);if(!it)return;const s=split(it);
-  if(s.cash>0)S.expenses.push({id:newId(),amount:r2(s.cash),category:it.kind==="insurance"?"Insurance":it.kind==="bill"?"Bills":"Subscriptions",note:it.name,date:today(),method:"GIRO",itemId:id,createdAt:Date.now()});
+  if(s.cash>0)S.expenses.push({id:newId(),amount:r2(s.cash),category:billCat(it),note:it.name,date:today(),method:it.method||"GIRO",itemId:id,createdAt:Date.now()});
   it.nextDue=advance(it.nextDue||today(),it.frequency||"yearly");it.lastPaid=today();save("Marked paid")}
 function editBill(id){
   const it=id?S.items.find(i=>i.id===id):null, s=it?split(it):{}, kind=it?.kind||"subscription", v=x=>x?x:"";
@@ -515,16 +548,41 @@ function editBill(id){
     <div class="grid3"><label class="f">Cash S$<input id="b-cash" inputmode="decimal" value="${v(s.cash)}"></label><label class="f">CPF S$<input id="b-ms" inputmode="decimal" value="${v(s.medisave)}"></label><label class="f">Invested S$<input id="b-inv" inputmode="decimal" value="${v(s.investment)}"></label></div>
     <p class="muted small" style="margin:-6px 0 0">Amount per billing cycle. Only cash counts as spending.</p>
     <label class="f">Next due date<input id="b-due" type="date" value="${esc(it?.nextDue||"")}"></label>
+    <div class="grid2"><label class="f">Counts as<select id="b-cat">${cats().map(c=>`<option ${c===(it?billCat(it):billCat({kind}))?"selected":""}>${esc(c)}</option>`).join("")}</select></label><label class="f">Paid with<select id="b-meth">${METHODS.map(m=>`<option ${m===(it?.method||"GIRO")?"selected":""}>${m}</option>`).join("")}</select></label></div>
+    <label class="chk"><input type="checkbox" id="b-auto" ${it?.auto?"checked":""}><span>Log it automatically on each due date<br><span class="muted small">For anything that repeats, like rent, an allowance or a gym class</span></span></label>
     <input id="b-note" placeholder="Note (optional)" value="${esc(it?.note||"")}" aria-label="Note">
     <p class="err" id="b-err" hidden></p>
     <div class="btns">${it?`<button class="btn danger" type="button" data-del-bill="${esc(it.id)}">Delete</button>`:""}<button class="btn primary" type="submit">Save</button></div>
   </form>`,it?(it.nextDue?null:"#b-due"):"#b-name");
+  if(!it){let set=false;document.getElementById("b-cat").addEventListener("change",()=>set=true);
+    document.querySelectorAll('input[name="bkind"]').forEach(r=>r.addEventListener("change",()=>{if(set)return;const kk=Object.keys(KIND).find(k=>KIND[k]===r.value);document.getElementById("b-cat").value=billCat({kind:kk})}))}
   document.getElementById("f-bill").addEventListener("submit",ev=>{ev.preventDefault();const er=document.getElementById("b-err");
     const name=document.getElementById("b-name").value.trim(),sp={cash:num("b-cash"),medisave:num("b-ms"),investment:num("b-inv")};
     if(!name){er.textContent="Give it a name.";er.hidden=false;return} if(!(sp.cash+sp.medisave+sp.investment>0)){er.textContent="Enter the amount per billing cycle.";er.hidden=false;return}
     const kk=Object.keys(KIND).find(k=>KIND[k]===picked("bkind"))||"subscription";
-    const body={kind:kk,name,provider:document.getElementById("b-prov").value.trim(),frequency:document.getElementById("b-freq").value,split:sp,amount:r2(sp.cash+sp.medisave+sp.investment),nextDue:document.getElementById("b-due").value||"",note:document.getElementById("b-note").value.trim()};
-    if(it)Object.assign(it,body);else S.items.push({id:newId(),...body});save("Saved")});
+    const body={kind:kk,name,provider:document.getElementById("b-prov").value.trim(),frequency:document.getElementById("b-freq").value,split:sp,amount:r2(sp.cash+sp.medisave+sp.investment),nextDue:document.getElementById("b-due").value||"",note:document.getElementById("b-note").value.trim(),category:document.getElementById("b-cat").value,method:document.getElementById("b-meth").value,auto:document.getElementById("b-auto").checked};
+    if(body.auto&&!body.nextDue){er.textContent="Add a due date so it knows when to log.";er.hidden=false;return}
+    if(body.auto&&!(sp.cash>0)){er.textContent="Only cash payments can be logged automatically.";er.hidden=false;return}
+    if(it)Object.assign(it,body);else S.items.push({id:newId(),...body});const n=autoLog();save(n?`Saved, and logged ${n} past payment${n===1?"":"s"}`:"Saved")});
+}
+function catSheet(){
+  const cb=S.settings.catBudgets||{};
+  const row=c=>`<div class="catrow"><input data-old="${esc(c)}" value="${esc(c)}" maxlength="24" ${c==="Other"?"readonly":""} aria-label="Category name"><input inputmode="decimal" placeholder="No limit" value="${cb[c]||""}" aria-label="Monthly limit"></div>`;
+  openSheet(`<div class="sheet-h"><h2>Categories</h2><button class="txt-btn" data-close>Cancel</button></div>
+  <p class="muted small" style="margin:0">Rename or add categories and set an optional monthly limit, shown on Home. Clear a name to remove it, and its entries move to Other. Rename one to match another to merge them.</p>
+  <form id="f-cats"><div class="catrows" id="c-rows">${cats().map(row).join("")}</div>
+    <button class="link" type="button" id="c-add" style="align-self:flex-start">＋ Add category</button>
+    <button class="btn primary wide" type="submit">Save</button></form>`);
+  document.getElementById("c-add").addEventListener("click",()=>{document.getElementById("c-rows").insertAdjacentHTML("beforeend",row("").replace('value=""','placeholder="New category"'));const l=[...document.querySelectorAll("#c-rows input[data-old]")].pop();l.focus()});
+  document.getElementById("f-cats").addEventListener("submit",ev=>{ev.preventDefault();const out=[],budgets={},ren={};
+    document.querySelectorAll("#c-rows .catrow").forEach(r=>{const[n,b]=r.querySelectorAll("input"),old=n.dataset.old,lim=parseFloat(String(b.value).replace(/[^0-9.]/g,""));
+      let name=n.value.trim().replace(/\s+/g," ");if(!name){if(old)ren[old]="Other";return}
+      name=out.find(x=>x.toLowerCase()===name.toLowerCase())||name;if(!out.includes(name))out.push(name);
+      if(old&&old!==name)ren[old]=name;if(lim>0&&!budgets[name])budgets[name]=r2(lim)});
+    if(!out.includes("Other"))out.push("Other");
+    S.expenses.forEach(e=>{if(ren[e.category])e.category=ren[e.category]});S.items.forEach(i=>{if(ren[i.category])i.category=ren[i.category]});
+    Object.keys(S.rules).forEach(k=>{if(ren[S.rules[k]])S.rules[k]=ren[S.rules[k]]});
+    S.settings.cats=out;S.settings.catBudgets=budgets;save("Categories saved")});
 }
 function compareSheet(){
   const all=S.items,t=totals(all),p=prevTotals(all),py=YEAR-1;
@@ -573,7 +631,7 @@ function applePayImport(){fileSheet("Import Apple Pay","Pick the <b>Outgoings Ap
   const all=parseTaps(txt||""),seen=new Set([...S.expenses.map(e=>e.importKey).filter(Boolean),...S.skippedTaps]),fresh=all.filter(t=>!seen.has(t.importKey));
   if(!all.length)return err("No Apple Pay taps found in that file.");err("");
   if(!fresh.length){document.getElementById("fs-out").innerHTML=`<p class="muted" style="margin:0">All ${all.length} taps are already imported.</p>`;return}
-  document.getElementById("fs-out").innerHTML=`<p style="margin:0"><b>${fresh.length} new tap${fresh.length===1?"":"s"}.</b> Check categories, then import.</p><div class="list">${fresh.map((t,i)=>`<div class="row"><span class="main"><span class="t">${esc(t.merchant)}</span><span class="s">S$${money(t.amount)} · ${fmtDate(t.date)}</span></span><select id="ap-${i}" style="width:auto;min-height:38px;padding:6px 30px 6px 10px" aria-label="Category">${["Skip",...CATS].map(c=>`<option ${c===(S.rules[mkey(t.merchant)]||"Other")?"selected":""}>${c}</option>`).join("")}</select></div>`).join("")}</div><button class="btn primary wide" id="ap-save">Import</button>`;
+  document.getElementById("fs-out").innerHTML=`<p style="margin:0"><b>${fresh.length} new tap${fresh.length===1?"":"s"}.</b> Check categories, then import.</p><div class="list">${fresh.map((t,i)=>`<div class="row"><span class="main"><span class="t">${esc(t.merchant)}</span><span class="s">S$${money(t.amount)} · ${fmtDate(t.date)}</span></span><select id="ap-${i}" style="width:auto;min-height:38px;padding:6px 30px 6px 10px" aria-label="Category">${["Skip",...cats()].map(c=>`<option ${c===(S.rules[mkey(t.merchant)]||"Other")?"selected":""}>${c}</option>`).join("")}</select></div>`).join("")}</div><button class="btn primary wide" id="ap-save">Import</button>`;
   document.getElementById("ap-save").onclick=()=>{let n=0;fresh.forEach((t,i)=>{const c=document.getElementById("ap-"+i).value;if(c==="Skip"){S.skippedTaps.push(t.importKey);return}S.rules[mkey(t.merchant)]=c;n++;
     S.expenses.push({id:newId(),amount:t.amount,category:c,note:t.merchant,date:t.date,method:"Apple Pay",card:t.card,importKey:t.importKey,createdAt:Date.now()})});save(`Imported ${n} tap${n===1?"":"s"}`)}})}
 const backupJSON=()=>JSON.stringify({app:"outgoings",version:1,exportedAt:new Date().toISOString(),items:S.items,expenses:S.expenses,income:S.income,rules:S.rules,skippedTaps:S.skippedTaps,settings:S.settings},null,2);
@@ -620,7 +678,7 @@ document.addEventListener("click",e=>{
   if((v=q("[data-del-inc]","delInc")))return twoTap(T("[data-del-inc]"),()=>{remove("income",v)});
   if((v=q("[data-del-bill]","delBill")))return twoTap(T("[data-del-bill]"),()=>{remove("items",v)});
   const a=q("[data-act]","act");
-  ({income:()=>incomeSheet(),add:()=>addSheet(),"new-bill":()=>editBill(),compare:compareSheet,"sheet-import":sheetImport,applepay:applePayImport,export:exportBackup,csv:exportCSV,restore}[a]||(()=>{}))();
+  ({income:()=>incomeSheet(),add:()=>addSheet(),"new-bill":()=>editBill(),compare:compareSheet,"sheet-import":sheetImport,applepay:applePayImport,export:exportBackup,csv:exportCSV,cats:catSheet,restore}[a]||(()=>{}))();
 });
 document.addEventListener("input",e=>{if(e.target.id==="act-q"){S.q=e.target.value;document.getElementById("act-body").innerHTML=actBody()}});
 document.addEventListener("change",e=>{if(e.target.id==="budget"){const b=num("budget");S.settings.budget=b>0?b:null;persist();toast(b>0?`Budget set to S$${nf0.format(b)}`:"Budget cleared")}});
@@ -628,11 +686,11 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!document.getElemen
 function setReveal(on){document.body.classList.toggle("reveal",on);const b=document.getElementById("eye");b.setAttribute("aria-pressed",String(on));b.setAttribute("aria-label",on?"Hide private amounts":"Show private amounts")}
 document.getElementById("eye").addEventListener("click",()=>setReveal(!document.body.classList.contains("reveal")));
 /* back in the app: pick up a new day, month or year since it was last open */
-document.addEventListener("visibilitychange",()=>{if(document.hidden)return setReveal(false);const y=new Date().getFullYear();if(y!==YEAR){YEAR=y;S.actYear=null;S.actMonth=null}render()});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)return setReveal(false);const y=new Date().getFullYear();if(y!==YEAR){YEAR=y;S.actYear=null;S.actMonth=null}const n=autoLog();if(n)persist();render();if(n)toast(`Logged ${n} repeating payment${n===1?"":"s"}`)});
 window.addEventListener("storage",ev=>{if(ev.key===KEY){load();render()}});
 
 /* ================= start ================= */
-load();setReveal(false);render();
+load();setReveal(false);{const n=autoLog();if(n)persist();render();if(n)toast(`Logged ${n} repeating payment${n===1?"":"s"}`)}
 (function(){const h=(location.hash||"").slice(1).toLowerCase();if(h==="log")addSheet();else if(h==="paynow")addSheet({method:"PayNow"});else if(h==="income")incomeSheet();
   if(h)try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}})();
 try{navigator.storage?.persist?.()}catch(e){}

@@ -1,6 +1,6 @@
 // Outgoings service worker: caches the app so it opens offline.
 // It never sees or stores your data — that lives in the app's own on-device storage.
-const VERSION = "outgoings-v7";
+const VERSION = "outgoings-v8";
 const ASSETS = [
   "./", "index.html", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png",
@@ -17,10 +17,19 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
-  // The page itself: try the network first so updates arrive, fall back to the cached copy offline.
+  // The page itself: try the network first so updates arrive, but if it hasn't answered in 3 seconds
+  // (weak signal) open the cached copy. The download carries on and the newer copy is used next time.
   if (req.mode === "navigate") {
-    e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put("index.html", copy)); return r; })
-      .catch(() => caches.match("index.html")));
+    const net = fetch(req).then(r => { if (r.ok) { const copy = r.clone(); e.waitUntil(caches.open(VERSION).then(c => c.put("index.html", copy))); } return r; });
+    e.waitUntil(net.catch(() => {}));
+    e.respondWith(new Promise(resolve => {
+      let done = false;
+      const finish = r => { if (!done && r) { done = true; resolve(r); } };
+      const cached = () => caches.match("index.html");
+      const timer = setTimeout(() => cached().then(finish), 3000);
+      net.then(r => { clearTimeout(timer); finish(r); })
+        .catch(() => { clearTimeout(timer); cached().then(h => finish(h || Response.error())); });
+    }));
     return;
   }
   e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
