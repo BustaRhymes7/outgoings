@@ -132,6 +132,12 @@ body.reveal .pv .pv-v{display:inline} body.reveal .pv .pv-m{display:none}
 .chips-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
 .chips-row::-webkit-scrollbar{display:none}
 .chips-row .pill{padding:6px 10px;font-size:.8rem}
+.stack{display:flex;flex-direction:column;gap:22px}
+.ynav{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ynav .yr{display:flex;align-items:center;gap:6px}
+.ynav h2{font-size:1.25rem;min-width:2.6em;text-align:center}
+.ynav .icon-btn{width:34px;height:34px;border-radius:10px}
+.ynav .icon-btn:disabled{opacity:.35;cursor:default}
 .daygrp{font-size:.76rem;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;display:flex;justify-content:space-between;padding:4px 4px 0}
 
 /* bills */
@@ -209,7 +215,8 @@ table.cmp th:first-child,table.cmp td:first-child{text-align:left;padding-left:0
 table.cmp th{font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
 table.cmp td.num{font-family:var(--f-mono)}
 table.cmp tr.g td{font-weight:700;border-bottom:0}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + env(safe-area-inset-bottom,0px) + 14px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.88rem;z-index:50;white-space:nowrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + env(safe-area-inset-bottom,0px) + 14px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.88rem;z-index:50;white-space:nowrap;display:flex;align-items:center;gap:14px}
+.toast .undo{color:var(--accent-soft);font-weight:700;padding:2px 0}
 </style>
 </head>
 <body>
@@ -233,14 +240,14 @@ table.cmp tr.g td{font-weight:700;border-bottom:0}
 
 <script>
 /* ================= constants & state ================= */
-const YEAR=new Date().getFullYear();
+let YEAR=new Date().getFullYear();
 const CATS=["Food","Groceries","Transport","Shopping","Bills","Insurance","Subscriptions","Health","Fun","Other"];
 const METHODS=["Card","Apple Pay","PayNow","Cash","GIRO"];
 const INCOME_TYPES=["Salary","Bonus","Other"];
 const FREQ={weekly:{n:52,label:"Weekly"},monthly:{n:12,label:"Monthly"},quarterly:{n:4,label:"Quarterly"},halfyearly:{n:2,label:"Half-yearly"},yearly:{n:1,label:"Yearly"}};
 const KIND={insurance:"Insurance",subscription:"Subscription",bill:"Bill"};
 const KEY="outgoings.v1";
-const S={tab:"home",items:[],expenses:[],income:[],rules:{},skippedTaps:[],settings:{},lastBackup:null,storageOK:true,period:"year",actMonth:null};
+const S={q:"",actYear:null,tab:"home",items:[],expenses:[],income:[],rules:{},skippedTaps:[],settings:{},lastBackup:null,storageOK:true,period:"year",actMonth:null};
 try{const t=localStorage.getItem("og-tab2");if(["home","activity","bills","more"].includes(t))S.tab=t;S.period=localStorage.getItem("og-period")==="month"?"month":"year"}catch(e){}
 
 /* ================= helpers ================= */
@@ -264,7 +271,7 @@ function advance(s,freq,dir=1){const d=new Date(s+"T00:00:00");if(freq==="weekly
 const pv=html=>`<span class="pv"><span class="pv-v">${html}</span><span class="pv-m">S$••••</span></span>`;
 const short=v=>v>=10000?Math.round(v/1000)+"k":v>=1000?(Math.round(v/100)/10)+"k":nf0.format(v);
 const initials=c=>esc((c||"?").replace(/[^A-Za-z0-9]/g,"").slice(0,2).toUpperCase()||"?");
-function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2200)}
+function toast(m,undo){const t=document.getElementById("toast");t.innerHTML=`<span>${esc(m)}</span>`+(undo?`<button class="undo" type="button" data-undo>Undo</button>`:"");toast._undo=undo||null;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true;toast._undo=null},undo?5000:2200)}
 
 /* bills maths */
 function split(it){const s=it.split||{};const has=s.cash!=null||s.medisave!=null||s.investment!=null;return has?{cash:+s.cash||0,medisave:+s.medisave||0,investment:+s.investment||0}:{cash:+it.amount||0,medisave:0,investment:0}}
@@ -292,7 +299,10 @@ function expectedIn(k){const out=[];S.items.forEach(it=>{const cash=split(it).ca
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({version:1,savedAt:Date.now(),lastBackup:S.lastBackup,items:S.items,expenses:S.expenses,income:S.income,rules:S.rules,skippedTaps:S.skippedTaps,settings:S.settings}));S.storageOK=true;return true}catch(e){S.storageOK=false;return false}}
 function load(){try{const raw=localStorage.getItem(KEY);if(!raw)return;const d=JSON.parse(raw);const A=x=>Array.isArray(x)?x:[];
   S.items=A(d.items);S.expenses=A(d.expenses);S.income=A(d.income);S.rules=d.rules&&typeof d.rules==="object"?d.rules:{};S.skippedTaps=A(d.skippedTaps);S.settings=d.settings&&typeof d.settings==="object"?d.settings:{};S.lastBackup=d.lastBackup||null}catch(e){S.storageOK=false}}
-function save(msg){const ok=persist();closeSheet();render();toast(ok?msg:"Couldn't save on this device. Export a backup.")}
+function save(msg,undo){const ok=persist();closeSheet();render();toast(ok?msg:"Couldn't save on this device. Export a backup.",ok?undo:null)}
+/* delete with a few seconds to undo; the entry goes back where it was */
+function remove(list,id){const i=S[list].findIndex(x=>x.id===id);if(i<0)return;const[gone]=S[list].splice(i,1);
+  save("Deleted",()=>{S[list].splice(Math.min(i,S[list].length),0,gone);const ok=persist();render();toast(ok?"Restored":"Couldn't save on this device. Export a backup.")})}
 const backupAge=()=>S.lastBackup?Math.floor((Date.now()-S.lastBackup)/864e5):null;
 
 /* ================= views ================= */
@@ -302,7 +312,7 @@ function render(){
   document.querySelectorAll(".tab").forEach(b=>{if(b.dataset.tab===S.tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   document.getElementById("view").innerHTML={home:vHome,activity:vActivity,bills:vBills,more:vMore}[S.tab]();
 }
-function expRow(e){const sub=[e.category,e.method].filter(Boolean).join(" · ");
+function expRow(e,withDate){const sub=[withDate&&fmtDate(e.date),e.category,e.method].filter(Boolean).join(" · ");
   return `<button class="row" data-exp="${esc(e.id)}"><span class="dot">${initials(e.category)}</span><span class="main"><span class="t">${esc(e.note||e.category)}</span><span class="s">${esc(sub)}</span></span><span class="amt"><span class="num">S$${money(e.amount)}</span></span></button>`}
 
 function vHome(){
@@ -333,24 +343,42 @@ function vHome(){
     ${upHtml?`<section><div class="sh"><h2>Coming up</h2>${up.length?`<button class="link" data-go="bills">All bills</button>`:""}</div>${upHtml}</section>`:""}
     ${catHtml?`<section><div class="sh"><h2>Where it went</h2><button class="link" data-go="activity">Details</button></div>${catHtml}</section>`:""}
     <section><div class="sh"><h2>Recent</h2>${recent.length?`<button class="link" data-go="activity">See all</button>`:""}</div>
-    ${recent.length?`<div class="list">${recent.map(expRow).join("")}</div>`:`<div class="list empty"><p>Nothing logged yet. Tap <b>+</b> whenever you pay for something. It takes a few seconds.</p>${!S.items.length?`<button class="link" data-act="restore">Restore from a backup instead</button>`:""}</div>`}</section>`;
+    ${recent.length?`<div class="list">${recent.map(e=>expRow(e)).join("")}</div>`:`<div class="list empty"><p>Nothing logged yet. Tap <b>+</b> whenever you pay for something. It takes a few seconds.</p>${!S.items.length?`<button class="link" data-act="restore">Restore from a backup instead</button>`:""}</div>`}</section>`;
 }
 
+function actYears(){let lo=YEAR;S.expenses.forEach(e=>{const y=parseInt((e.date||"").slice(0,4),10);if(y>1900&&y<lo)lo=y});return{lo,hi:YEAR}}
 function vActivity(){
-  const nowI=new Date().getFullYear()===YEAR?new Date().getMonth():11;
-  if(S.actMonth==null)S.actMonth=nowI;
-  const tot=[...Array(12)].map((_,i)=>{const k=YEAR+"-"+pad(i+1);return i>nowI?sum(expectedIn(k),"amt"):sum(inMonth(S.expenses,k))}), max=Math.max(...tot,1);
-  const mn=(i,f)=>new Date(YEAR,i,1).toLocaleDateString("en-SG",{month:f});
+  return `<section><input type="search" id="act-q" value="${esc(S.q)}" placeholder="Search notes, categories, amounts" enterkeyhint="search" autocomplete="off" aria-label="Search spending"></section>
+    <div class="stack" id="act-body">${actBody()}</div>`;
+}
+const actBody=()=>S.q.trim()?searchBody():yearBody();
+function searchBody(){
+  const terms=S.q.trim().toLowerCase().split(/\s+/);
+  const hits=S.expenses.filter(e=>{const h=[e.note,e.category,e.method,money(e.amount),String(e.amount)].join(" ").toLowerCase();return terms.every(t=>h.includes(t))})
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0));
+  if(!hits.length)return `<section><div class="list empty"><p>Nothing matches “${esc(S.q.trim())}”.</p></div></section>`;
+  const months={};hits.forEach(e=>(months[(e.date||"").slice(0,7)]??=[]).push(e));
+  return `<section><div class="msum"><h2>${hits.length} match${hits.length===1?"":"es"}</h2><span class="num">S$${money(sum(hits))}</span></div>
+    ${Object.entries(months).map(([k,es])=>`<div class="daygrp"><span>${/^\d{4}-\d{2}$/.test(k)?monthName(k)+" "+k.slice(0,4):"No date"}</span><span class="num">S$${money(sum(es))}</span></div><div class="list">${es.map(e=>expRow(e,true)).join("")}</div>`).join("")}</section>`;
+}
+function yearBody(){
+  const{lo,hi}=actYears();if(S.actYear==null||S.actYear<lo||S.actYear>hi)S.actYear=hi;const y=S.actYear;
+  const nowI=y===YEAR?new Date().getMonth():11;
+  if(S.actMonth==null||S.actMonth>11)S.actMonth=nowI;
+  const tot=[...Array(12)].map((_,i)=>{const k=y+"-"+pad(i+1);return i>nowI?sum(expectedIn(k),"amt"):sum(inMonth(S.expenses,k))}), max=Math.max(...tot,1);
+  const mn=(i,f)=>new Date(y,i,1).toLocaleDateString("en-SG",{month:f});
   const tiles=tot.map((v,i)=>`<button class="mt${i>nowI?" future":""}${i===S.actMonth?" sel":""}" data-am="${i}" style="--lvl:${v?Math.max(.15,v/max).toFixed(3):0}" aria-label="${mn(i,"long")}"><span class="n">${mn(i,"short")}</span><span class="v num">${v?short(v):"·"}</span></button>`).join("");
-  const k=YEAR+"-"+pad(S.actMonth+1);
+  const chevron=d=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ynav=lo<hi?`<div class="ynav"><div class="yr"><button class="icon-btn" data-ay="${y-1}" aria-label="${y-1}" ${y<=lo?"disabled":""}>${chevron("m15 6-6 6 6 6")}</button><h2>${y}</h2><button class="icon-btn" data-ay="${y+1}" aria-label="${y+1}" ${y>=hi?"disabled":""}>${chevron("m9 6 6 6-6 6")}</button></div><span class="num muted">S$${money(sum(S.expenses.filter(e=>(e.date||"").startsWith(y+"-"))))} spent</span></div>`:"";
+  const k=y+"-"+pad(S.actMonth+1);
   let body;
   if(S.actMonth>nowI){const ex=expectedIn(k);body=`<div class="msum"><h2>${monthName(k)}</h2><span class="num muted">S$${money(sum(ex,"amt"))} expected</span></div>
     ${ex.length?`<div class="list">${ex.map(x=>`<button class="row" data-bill="${esc(x.it.id)}"><span class="dot">${initials(x.it.provider||x.it.name)}</span><span class="main"><span class="t">${esc(x.it.name)}</span><span class="s">${x.date?"Due "+fmtDate(x.date):"Monthly"}</span></span><span class="amt"><span class="num">S$${money(x.amt)}</span></span></button>`).join("")}</div>`:`<div class="list empty"><p>No bills expected in ${monthName(k)}.</p></div>`}`}
   else{const l=inMonth(S.expenses,k).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0)), days={};l.forEach(e=>(days[e.date]??=[]).push(e));const cats=byCat(l);
-    body=`<div class="msum"><h2>${monthName(k)}</h2><span class="num">S$${money(sum(l))}</span></div>
+    body=`<div class="msum"><h2>${monthName(k)}${y!==YEAR?" "+y:""}</h2><span class="num">S$${money(sum(l))}</span></div>
     ${cats.length?`<div class="chips-row">${cats.map(([c,v])=>`<span class="pill">${esc(c)} <span class="num">S$${nf0.format(v)}</span></span>`).join("")}</div>`:""}
-    ${l.length?Object.entries(days).map(([d,es])=>`<div class="daygrp"><span>${dayLabel(d)}</span><span class="num">S$${money(sum(es))}</span></div><div class="list">${es.map(expRow).join("")}</div>`).join(""):`<div class="list empty"><p>Nothing logged in ${monthName(k)}.</p></div>`}`}
-  return `<section><div class="ycal">${tiles}</div></section><section>${body}</section>`;
+    ${l.length?Object.entries(days).map(([d,es])=>`<div class="daygrp"><span>${dayLabel(d)}</span><span class="num">S$${money(sum(es))}</span></div><div class="list">${es.map(e=>expRow(e)).join("")}</div>`).join(""):`<div class="list empty"><p>Nothing logged in ${monthName(k)}${y!==YEAR?" "+y:""}.</p></div>`}`}
+  return `<section>${ynav}<div class="ycal">${tiles}</div></section><section>${body}</section>`;
 }
 
 function vBills(){
@@ -388,7 +416,8 @@ function vMore(){
     ${item("applepay","Apple Pay taps","From the file your Shortcut writes")}</div></section>
   <section><div class="sh"><h2>Backup</h2></div><div class="list set">
     ${item("export","Export backup",age==null?"Never backed up":`Last backup ${age===0?"today":age+" day"+(age===1?"":"s")+" ago"}`)}
-    ${item("restore","Restore from backup","Replaces what's on this phone")}</div>
+    ${item("restore","Restore from backup","Replaces what's on this phone")}
+    ${item("csv","Export as spreadsheet","Spending and income as CSV, for Google Sheets or Excel")}</div>
     <p class="muted small" style="margin:2px 4px 0">Everything is stored only on this phone. Nothing is sent anywhere. Deleting the app or clearing Safari's website data erases it, so back up now and then.</p></section>`;
 }
 
@@ -548,9 +577,15 @@ function applePayImport(){fileSheet("Import Apple Pay","Pick the <b>Outgoings Ap
   document.getElementById("ap-save").onclick=()=>{let n=0;fresh.forEach((t,i)=>{const c=document.getElementById("ap-"+i).value;if(c==="Skip"){S.skippedTaps.push(t.importKey);return}S.rules[mkey(t.merchant)]=c;n++;
     S.expenses.push({id:newId(),amount:t.amount,category:c,note:t.merchant,date:t.date,method:"Apple Pay",card:t.card,importKey:t.importKey,createdAt:Date.now()})});save(`Imported ${n} tap${n===1?"":"s"}`)}})}
 const backupJSON=()=>JSON.stringify({app:"outgoings",version:1,exportedAt:new Date().toISOString(),items:S.items,expenses:S.expenses,income:S.income,rules:S.rules,skippedTaps:S.skippedTaps,settings:S.settings},null,2);
-function exportBackup(){const name=`outgoings-backup-${today()}.json`,blob=new Blob([backupJSON()],{type:"application/json"});let file=null;try{file=new File([blob],name,{type:"application/json"})}catch(e){}
-  const done=()=>{S.lastBackup=Date.now();persist();render();toast("Backup saved")};
-  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:"Outgoings backup"}).then(done).catch(x=>{if(x&&x.name!=="AbortError")download(blob,name,done)});return}
+function exportBackup(){shareFile(new Blob([backupJSON()],{type:"application/json"}),`outgoings-backup-${today()}.json`,"Outgoings backup",()=>{S.lastBackup=Date.now();persist();render();toast("Backup saved")})}
+/* spreadsheet copy of spending and income; text cells that look like formulas are defused */
+function exportCSV(){if(!S.expenses.length&&!S.income.length)return toast("Nothing to export yet");
+  const cell=v=>{let s=String(v??"");if(/^[=+\-@\t\r]/.test(s))s="'"+s;return/[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const rows=[...S.expenses.map(e=>[e.date,"Spend",r2(e.amount).toFixed(2),e.category,e.note,e.method]),...S.income.map(e=>[e.date,"Income",r2(e.net).toFixed(2),e.type||"Salary",e.note,""])].sort((a,b)=>String(b[0]||"").localeCompare(String(a[0]||"")));
+  const csv="\ufeff"+[["Date","Type","Amount","Category","Note","Paid with"],...rows].map(r=>r.map(cell).join(",")).join("\r\n");
+  shareFile(new Blob([csv],{type:"text/csv"}),`outgoings-${today()}.csv`,"Outgoings spending",()=>toast("Spreadsheet saved"))}
+function shareFile(blob,name,title,done){let file=null;try{file=new File([blob],name,{type:blob.type})}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title}).then(done).catch(x=>{if(x&&x.name!=="AbortError")download(blob,name,done)});return}
   download(blob,name,done)}
 function download(blob,name,done){try{const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);done()}catch(e){toast("Couldn't export here")}}
 function restore(){fileSheet("Restore from backup","Pick a backup file you exported. This <b>replaces</b> everything currently on this phone.",".json,application/json,text/plain",(txt,err)=>{
@@ -562,9 +597,10 @@ function restore(){fileSheet("Restore from backup","Pick a backup file you expor
 function twoTap(btn,fn){if(btn.dataset.armed)return fn();btn.dataset.armed="1";const t=btn.textContent;btn.textContent="Tap again to delete";setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.textContent=t}},3000)}
 
 /* ================= events ================= */
-function go(tab){S.tab=tab;try{localStorage.setItem("og-tab2",tab)}catch(e){}render();window.scrollTo({top:0})}
+function go(tab){if(tab!==S.tab)S.q="";S.tab=tab;try{localStorage.setItem("og-tab2",tab)}catch(e){}render();window.scrollTo({top:0})}
 document.addEventListener("click",e=>{
   const T=s=>e.target.closest(s), q=(s,a)=>{const el=T(s);return el?el.dataset[a]:undefined};
+  if(T("[data-undo]")){const u=toast._undo;toast._undo=null;document.getElementById("toast").hidden=true;return u&&u()}
   if(e.target.id==="scrim")return closeSheet();
   if(T("[data-close]"))return closeSheet();
   let v;
@@ -573,23 +609,26 @@ document.addEventListener("click",e=>{
   if((v=q("[data-go]","go"))){closeSheet();return go(v)}
   if((v=q("[data-period]","period"))){S.period=v;try{localStorage.setItem("og-period",v)}catch(x){}return render()}
   if((v=q("[data-am]","am"))!==undefined){S.actMonth=+v;return render()}
+  if((v=q("[data-ay]","ay"))!==undefined){const y=+v;S.actYear=y;S.actMonth=y===YEAR?new Date().getMonth():11;return render()}
   if((v=q("[data-exp]","exp")))return editExpense(v);
   if((v=q("[data-inc]","inc")))return incomeSheet(v);
   if((v=q("[data-bill]","bill")))return billSheet(v);
   if((v=q("[data-edit-bill]","editBill")))return editBill(v);
   if((v=q("[data-confirm-paid]","confirmPaid")))return confirmPaid(v);
   if((v=q("[data-paid]","paid")))return paidSheet(v);
-  if((v=q("[data-del-exp]","delExp")))return twoTap(T("[data-del-exp]"),()=>{S.expenses=S.expenses.filter(x=>x.id!==v);save("Deleted")});
-  if((v=q("[data-del-inc]","delInc")))return twoTap(T("[data-del-inc]"),()=>{S.income=S.income.filter(x=>x.id!==v);save("Deleted")});
-  if((v=q("[data-del-bill]","delBill")))return twoTap(T("[data-del-bill]"),()=>{S.items=S.items.filter(x=>x.id!==v);save("Deleted")});
+  if((v=q("[data-del-exp]","delExp")))return twoTap(T("[data-del-exp]"),()=>{remove("expenses",v)});
+  if((v=q("[data-del-inc]","delInc")))return twoTap(T("[data-del-inc]"),()=>{remove("income",v)});
+  if((v=q("[data-del-bill]","delBill")))return twoTap(T("[data-del-bill]"),()=>{remove("items",v)});
   const a=q("[data-act]","act");
-  ({income:()=>incomeSheet(),add:()=>addSheet(),"new-bill":()=>editBill(),compare:compareSheet,"sheet-import":sheetImport,applepay:applePayImport,export:exportBackup,restore}[a]||(()=>{}))();
+  ({income:()=>incomeSheet(),add:()=>addSheet(),"new-bill":()=>editBill(),compare:compareSheet,"sheet-import":sheetImport,applepay:applePayImport,export:exportBackup,csv:exportCSV,restore}[a]||(()=>{}))();
 });
+document.addEventListener("input",e=>{if(e.target.id==="act-q"){S.q=e.target.value;document.getElementById("act-body").innerHTML=actBody()}});
 document.addEventListener("change",e=>{if(e.target.id==="budget"){const b=num("budget");S.settings.budget=b>0?b:null;persist();toast(b>0?`Budget set to S$${nf0.format(b)}`:"Budget cleared")}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!document.getElementById("scrim").hidden)closeSheet()});
 function setReveal(on){document.body.classList.toggle("reveal",on);const b=document.getElementById("eye");b.setAttribute("aria-pressed",String(on));b.setAttribute("aria-label",on?"Hide private amounts":"Show private amounts")}
 document.getElementById("eye").addEventListener("click",()=>setReveal(!document.body.classList.contains("reveal")));
-document.addEventListener("visibilitychange",()=>{if(document.hidden)setReveal(false)});
+/* back in the app: pick up a new day, month or year since it was last open */
+document.addEventListener("visibilitychange",()=>{if(document.hidden)return setReveal(false);const y=new Date().getFullYear();if(y!==YEAR){YEAR=y;S.actYear=null;S.actMonth=null}render()});
 window.addEventListener("storage",ev=>{if(ev.key===KEY){load();render()}});
 
 /* ================= start ================= */

@@ -2,7 +2,7 @@
 
 A personal tracker for day-to-day spending, bills (insurance and subscriptions) and salary.
 
-**Home** shows this month: spending against your budget or your usual month, bills still due, where the money went and recent entries. **+** logs a spend or income. **Activity** has the year at a glance and every entry by month. **Bills** covers insurance and subscriptions, split into cash, CPF and invested, with a year-on-year comparison. **More** holds income, budget, imports and backup.
+**Home** shows this month: spending against your budget or your usual month, bills still due, where the money went and recent entries. **+** logs a spend or income. **Activity** has the year at a glance, every entry by month, earlier years, and a search across everything. **Bills** covers insurance and subscriptions, split into cash, CPF and invested, with a year-on-year comparison. **More** holds income, budget, imports, backup and a spreadsheet (CSV) export. Deleting an entry shows an Undo button for a few seconds.
 
 **Your data never leaves your phone.** The app is a set of static files. GitHub only serves the app's code; everything you enter is saved in the app's own storage on your device. There's no server, no account and no analytics, and the app loads nothing from other websites.
 
